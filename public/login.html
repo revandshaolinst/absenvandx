@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - PresensiKu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { primary: "#00288e", "primary-container": "#1e40af", "on-primary": "#ffffff", surface: "#faf8ff", "on-surface": "#131b2e", "surface-container-lowest": "#ffffff" }
+        },
+        fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Plus Jakarta Sans', 'sans-serif'] }
+      }
+    }
+  </script>
+</head>
+<body class="bg-surface font-sans text-on-surface flex items-center justify-center min-h-screen p-4">
+  <div class="bg-surface-container-lowest w-full max-w-md p-8 rounded-2xl shadow-lg">
+    <div class="flex flex-col items-center mb-8">
+      <div class="w-16 h-16 bg-primary-container text-on-primary rounded-2xl flex items-center justify-center mb-4 text-3xl font-bold">P</div>
+      <h1 class="font-display text-2xl font-bold text-center">Masuk ke PresensiKu</h1>
+      <p class="text-gray-500 text-sm text-center mt-2">Silakan login sebagai Karyawan atau HRD.</p>
+    </div>
+    
+    <form id="loginForm" class="flex flex-col gap-4">
+      <div>
+        <label class="block text-sm font-semibold mb-1">Email</label>
+        <input type="email" id="email" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" value="satu@gmail.com" required>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">Password</label>
+        <input type="password" id="password" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" value="password123" required>
+      </div>
+      <button type="submit" class="w-full py-3 mt-4 bg-primary text-on-primary rounded-xl font-bold hover:opacity-90 transition-opacity">Masuk</button>
+    </form>
+    
+    <div class="mt-6 flex flex-col gap-2">
+      <div class="text-xs text-gray-400 text-center uppercase tracking-widest font-semibold mb-1">Akun Demo Cepat</div>
+      <button onclick="document.getElementById('email').value='satu@gmail.com'" class="text-sm py-2 px-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-semibold">Gunakan Akun Karyawan</button>
+      <button onclick="document.getElementById('email').value='hrd@kantor.com'" class="text-sm py-2 px-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 font-semibold">Gunakan Akun HRD/Admin</button>
+      <button onclick="document.getElementById('email').value='super@kantor.com'" class="text-sm py-2 px-4 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 font-semibold border border-red-200">Gunakan Akun Super Admin</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api';
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const btn = document.querySelector('button[type="submit"]');
+      
+      btn.innerText = 'Memeriksa...';
+      try {
+        const res = await fetch(API_URL + '/auth/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          // Decode JWT payload manually (base64)
+          const payload = JSON.parse(atob(data.token.split('.')[1]));
+          
+          if (payload.role === 'Super Admin') {
+            localStorage.setItem('presensi_admin_token', data.token);
+            window.location.href = 'superadmin.html';
+          } else if (payload.role === 'HR' || payload.role === 'Admin') {
+            localStorage.setItem('presensi_admin_token', data.token);
+            window.location.href = 'admin.html';
+          } else {
+            localStorage.setItem('presensi_token', data.token);
+            window.location.href = 'dashboard.html';
+          }
+        } else {
+          alert('Gagal login: ' + (data.error || 'Email/Password salah.'));
+        }
+      } catch (err) {
+        alert('Server backend belum menyala!');
+      }
+      btn.innerText = 'Masuk';
+    });
+  </script>
+</body>
+</html>
